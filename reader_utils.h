@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define MAX_ROW_LENGTH_U 15000
+#define MAX_ROW_LENGTH_U 20000
 
 
 /**

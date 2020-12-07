@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "reader_utils.h"
 
 /** maximální délka názvu stanice (snad postačí). */
@@ -12,6 +13,8 @@
 #define FILE_HEADER "WKT,id,sname"
 /** maximální délka jednoho řádku souboru s vrcholy */
 #define MAX_SZ_LENGTH 1000
+/** počet sloupců v souboru */
+#define COLUMNS 3
 
 /**
  * \struct vrchol
@@ -38,13 +41,14 @@ typedef struct node_t {
  *          <li> 4 "file_name" je null </li>
  *         </ul>
  */
-unsigned int read_nodes(char *file_name, node *output, unsigned int *node_len);
+unsigned int read_nodes(char *file_name, node **output, int *node_len);
 
 /**
  * Zpracuje načtenou řádku na strukturu "node".
  * @param line řádka pro zpracování
+ * @param přiřadí do paměti 1, pokud nešla přiřadit paměť
  * @return vrchol reprezentující stanici, jinak NULL
  */
-node *process_row(char *line);
+node *process_node_row(char *line, int *flag);
 
 #endif
