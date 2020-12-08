@@ -23,18 +23,24 @@ unsigned int read_nodes(char *file_name, node **output, int *node_len) {
 
     /* zjisti počet řádek souboru */
     file_length = get_line_count(file);
-    if (file_length < 2) /* soubor jen s hlavičkou asi smysl nedává */
+    if (file_length < 2) {
+        /* soubor jen s hlavičkou asi smysl nedává */
+        fclose(file);
         return 3;
+    }
 
     /* přiřaď pamět potřebnou pro zpracování a načtení všech řádků */
     rows = malloc(sizeof(node) * file_length);
-    if (!rows)
+    if (!rows) {
+        fclose(file);
         return 4;
+    }
 
     /* zkontroluj hlavičku souboru */
     fgets(row, MAX_SZ_NODES_LENGTH, file); /* nebude NULL */
     if (strcmp(row, FILE_NODES_HEADER) != 0) {
         free(rows);
+        fclose(file);
         return 3;
     }
 
@@ -53,11 +59,14 @@ unsigned int read_nodes(char *file_name, node **output, int *node_len) {
         /* potřebuju minimálně 2 prvky */
         if (actNode > 0) {
             /* id duplicita */
-            if (rows[actNode - 1].id == curr->id)
+            if (rows[actNode - 1].id == curr->id) {
+                free(curr);
                 continue; /* SKIP -> id jsou stejné */
+            }
         }
 
         rows[actNode] = *curr;
+        free(curr);
         actNode++;
     }
 
@@ -70,6 +79,8 @@ unsigned int read_nodes(char *file_name, node **output, int *node_len) {
     /* zkopíruj pole do outputu */
     *output = malloc(sizeof(node) * actNode);
     if (!(*output)) {
+        fclose(file);
+        free(rows);
         return 3;
     }
 
@@ -85,7 +96,6 @@ unsigned int read_nodes(char *file_name, node **output, int *node_len) {
     /* uvolni paměť */
 
     fclose(file);
-
     free(rows);
 
     return 0;

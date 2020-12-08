@@ -42,6 +42,7 @@ int *get_input_indexes(int argc, char *argv[], int flags_len, char *flags[], uns
 
         /* přepínač nebyl nalezen */
         if (!exist) {
+            free(res);
             *err = 0;
             return NULL;
         }

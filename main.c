@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
 
     /* vrcholy */
     if (flags_value[0] <= 0) {
+        free(flags_value);
         printf(ERROR_NODES_FILE);
         return 1;
     } else {
@@ -53,6 +54,9 @@ int main(int argc, char *argv[]) {
         err = read_nodes(argv[flags_value[0]], &nodes, &nodes_len);
         if (err == 1 || err == 3) {
             printf(ERROR_NODES_FILE);
+            free(flags_value);
+            if (!nodes)
+                free(nodes);
             return 2;
         }
     }
@@ -60,6 +64,8 @@ int main(int argc, char *argv[]) {
     /* hrany */
     if (flags_value[1] <= 0) {
         printf(ERROR_EDGES_FILE);
+        free(flags_value);
+        free(nodes);
         return 2;
     } else {
         /* načti hrany */
@@ -67,12 +73,20 @@ int main(int argc, char *argv[]) {
         err = read_edges(argv[flags_value[1]], &edges, &edge_len);
         if (err == 1 || err == 3) {
             printf(ERROR_EDGES_FILE);
+            free(flags_value);
+            free(nodes);
+            if (!edges)
+                free(edges);
             return 2;
         }
     }
 
     printf("%d \n", nodes_len);
     printf("%d \n", edge_len);
+
+    free(flags_value);
+    free(nodes);
+    free(edges);
 
     return 0;
 }

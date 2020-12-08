@@ -19,18 +19,24 @@ unsigned int read_edges(char *file_name, edge **output, int *edge_len) {
 
     /* zjisti počet řádků v souboru */
     file_length = get_line_count(file);
-    if (file_length < 2) /* soubor jen s hlavičkou asi smysl nedává */
+    if (file_length < 2) {
+        /* soubor jen s hlavičkou asi smysl nedává */
+        fclose(file);
         return 3;
+    }
 
     /* přiřaď pamět potřebnou pro zpracování a načtení všech řádků */
     rows = malloc(sizeof(edge) * file_length);
-    if (!rows)
+    if (!rows) {
+        fclose(file);
         return 4;
+    }
 
     /* zkontroluj hlavičku souboru */
     fgets(row, MAX_SZ_EDGE_LENGTH, file); /* nebude NULL */
     if ((strcmp(row, FILE_HEADER_EDGES_1) != 0) && (strcmp(row, FILE_HEADER_EDGES_2) != 0)) {
         free(rows);
+        fclose(file);
         return 3;
     }
 
@@ -51,22 +57,31 @@ unsigned int read_edges(char *file_name, edge **output, int *edge_len) {
         /* vyfiltruj špatná data */
 
         /* 0 délka */
-        if (curr->length == 0)
+        if (curr->length == 0) {
+            free(curr);
             continue;
+        }
         /* hrana {u,u} */
-        if (curr->target == curr->source)
+        if (curr->target == curr->source) {
+            free(curr);
             continue;
+        }
 
         if (actEdge > 0) {
             /* id duplicita */
-            if (rows[actEdge - 1].id == curr->id)
+            if (rows[actEdge - 1].id == curr->id) {
+                free(curr);
                 continue;
+            }
             /* hrana již existuje */
-            if (checkIfExist(rows, actEdge, curr->source, curr->target) == 1)
+            if (checkIfExist(rows, actEdge, curr->source, curr->target) == 1) {
+                free(curr);
                 continue;
+            }
         }
 
         rows[actEdge] = *curr;
+        free(curr);
         actEdge++;
     }
 
@@ -74,6 +89,7 @@ unsigned int read_edges(char *file_name, edge **output, int *edge_len) {
     *output = malloc(sizeof(edge) * actEdge);
     if (!(*output)) {
         free(rows);
+        fclose(file);
         return 3;
     }
 
