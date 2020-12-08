@@ -1,11 +1,12 @@
 #include "edges_reader.h"
 
-unsigned int read_edges(char *file_name, edge **output, int *edge_len, unsigned const int maxId) {
+unsigned int read_edges(char *file_name, edge **output, int *edge_len) {
     FILE *file;
     unsigned int file_length;
     edge *rows = NULL, *curr = NULL;
-    int actEdge, err = 0;
+    int actEdge, i, err = 0;
     char row[MAX_SZ_EDGE_LENGTH];
+    unsigned int *matrix = NULL;
 
     /* kontrola parametrů */
     if (!file_name || !output || !edge_len)
@@ -19,18 +20,18 @@ unsigned int read_edges(char *file_name, edge **output, int *edge_len, unsigned 
     /* zjisti počet řádků v souboru */
     file_length = get_line_count(file);
     if (file_length < 2) /* soubor jen s hlavičkou asi smysl nedává */
-        return 2;
+        return 3;
 
     /* přiřaď pamět potřebnou pro zpracování a načtení všech řádků */
     rows = malloc(sizeof(edge) * file_length);
     if (!rows)
-        return 3;
+        return 4;
 
     /* zkontroluj hlavičku souboru */
     fgets(row, MAX_SZ_EDGE_LENGTH, file); /* nebude NULL */
     if ((strcmp(row, FILE_HEADER_EDGES_1) != 0) && (strcmp(row, FILE_HEADER_EDGES_2) != 0)) {
         free(rows);
-        return 2;
+        return 3;
     }
 
     /* projdi a zpracuj data souboru */
@@ -38,29 +39,51 @@ unsigned int read_edges(char *file_name, edge **output, int *edge_len, unsigned 
     while (fgets(row, MAX_SZ_EDGE_LENGTH, file) != NULL) {
         curr = process_edge_row(row, &err);
         if (!curr) {
-            if (err == 1)
-                return 3;
-            return 2;
+            /* free */
+            /*
+            free(rows);
+            return (err == 1) ? 4 : 3;
+             */
+            /* IDK it depends... 0*/
+            continue;
         }
 
         /* vyfiltruj špatná data */
+
+        /* 0 délka */
+        if (curr->length == 0)
+            continue;
+        /* hrana {u,u} */
+        if (curr->target == curr->source)
+            continue;
+
         if (actEdge > 0) {
             /* id duplicita */
             if (rows[actEdge - 1].id == curr->id)
                 continue;
-            /* 0 délka */
-            if (curr->length == 0)
+            /* hrana již existuje */
+            if (checkIfExist(rows, actEdge, curr->source, curr->target) == 1)
                 continue;
-            /* hrana je buď {u,u} a nebo už existuje */
-
         }
 
         rows[actEdge] = *curr;
-
         actEdge++;
     }
 
-    printf("%d", actEdge);
+    /* zkopíruj pole do outputu */
+    *output = malloc(sizeof(edge) * actEdge);
+    if (!(*output)) {
+        free(rows);
+        return 3;
+    }
+
+    memcpy(*output, rows, sizeof(edge) * actEdge);
+    *edge_len = actEdge;
+
+    /* uvolni paměť */
+    free(rows);
+
+    fclose(file);
 
     return 0;
 }
@@ -162,4 +185,19 @@ edge *process_edge_row(char *line, int *flag) {
     */
 
     return res;
+}
+
+int checkIfExist(edge *rows, unsigned int rows_len, unsigned int source, unsigned int target) {
+    unsigned int i;
+
+    if (!rows || rows_len == 0 || source == 0 || target == 0)
+        return 1;
+
+    for (i = 0; i < rows_len; ++i) {
+        if (((source == rows[i].source) && (target == rows[i].target)) ||
+            ((source == rows[i].target) && (target == rows[i].source)))
+            return 1;
+    }
+
+    return 0;
 }

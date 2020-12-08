@@ -1,15 +1,19 @@
 #include "console_input.h"
 #include <stdio.h>
 
-int *get_input_indexes(int argc, char *argv[], int flags_len, char *flags[]) {
+int *get_input_indexes(int argc, char *argv[], int flags_len, char *flags[], unsigned int *err) {
     int *res, i, fl, exist;
 
-    if (argc < 1 || !argv || flags_len <= 0 || !flags)
+    if (argc < 1 || !argv || flags_len <= 0 || !flags) {
+        *err = 1;
         return NULL;
+    }
 
     res = malloc(sizeof(int) * flags_len);
-    if (!res)
+    if (!res) {
+        *err = 2;
         return NULL;
+    }
 
     /* vynuluj res */
     for (i = 0; i < flags_len; ++i) {
@@ -37,8 +41,10 @@ int *get_input_indexes(int argc, char *argv[], int flags_len, char *flags[]) {
         }
 
         /* přepínač nebyl nalezen */
-        if (!exist)
+        if (!exist) {
+            *err = 0;
             return NULL;
+        }
     }
 
     return res;

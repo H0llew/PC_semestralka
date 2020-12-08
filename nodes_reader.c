@@ -4,17 +4,17 @@ unsigned int read_nodes(char *file_name, node **output, int *node_len) {
     /* čtení */
     FILE *file;
     unsigned int file_length;
-    char row[MAX_SZ_LENGTH];
+    char row[MAX_SZ_NODES_LENGTH];
     unsigned int count;
-    int actPos = 0;
+    int actNode = 0;
     int err = 0;
     /* vrcholy */
-    node *res = NULL;
+    node *rows = NULL;
     node *curr = NULL;
 
-    /* ověř vstup */
-    if (!file_name)
-        return 4;
+    /* kontrola parametrů */
+    if (!file_name || !output || !node_len)
+        return 2;
 
     /* otevři soubor */
     file = fopen(file_name, "r");
@@ -23,79 +23,70 @@ unsigned int read_nodes(char *file_name, node **output, int *node_len) {
 
     /* zjisti počet řádek souboru */
     file_length = get_line_count(file);
-    if (file_length == 0)
-        return 2;
-
-    /* malloc node */
-    res = malloc(sizeof(node) * (file_length - 1)); /* -1 protože header */
-    if (!res)
+    if (file_length < 2) /* soubor jen s hlavičkou asi smysl nedává */
         return 3;
 
-    /* projdi a zpracuj soubor */
-    count = 0;
-    actPos = 0;
-    while (fgets(row, MAX_SZ_LENGTH, file) != NULL) {
-        if (count == 0) {
-            /* zkontroluj hlavičku */
-            if (strcmp(row, FILE_HEADER) == 0)
-                return 2;
-            count++;
+    /* přiřaď pamět potřebnou pro zpracování a načtení všech řádků */
+    rows = malloc(sizeof(node) * file_length);
+    if (!rows)
+        return 4;
+
+    /* zkontroluj hlavičku souboru */
+    fgets(row, MAX_SZ_NODES_LENGTH, file); /* nebude NULL */
+    if (strcmp(row, FILE_NODES_HEADER) != 0) {
+        free(rows);
+        return 3;
+    }
+
+    /* projdi a zpracuj data souboru */
+    actNode = 0;
+    while (fgets(row, MAX_SZ_NODES_LENGTH, file) != NULL) {
+        curr = process_node_row(row, &err);
+        if (!curr) {
+
+            /* IDK it depends.. */
             continue;
         }
 
-        curr = process_node_row(row, &err);
-        if (!curr) {
-            /* TODO pamět */
-            return 2;
-        }
-        if (err == 1) {
-            /* TODO pamět */
-            return 3;
-        }
+        /* vyfiltruj špatná data */
 
         /* potřebuju minimálně 2 prvky */
-        if (actPos > 0) {
-            /* zkontroluj zda nemají stejné id */
-            if (res[actPos - 1].id == (*curr).id)
+        if (actNode > 0) {
+            /* id duplicita */
+            if (rows[actNode - 1].id == curr->id)
                 continue; /* SKIP -> id jsou stejné */
-            res[actPos] = *curr;
-            /* printf("T %u \n", res[actPos - 1].id); */
-        } else {
-            res[actPos] = *curr;
-            /* printf("T %u \n", res[actPos].id); */
         }
 
-        count++;
-        actPos++;
+        rows[actNode] = *curr;
+        actNode++;
     }
 
     /*
-    for (count = 0; count < actPos; ++count) {
-        printf("%u \n", res[count].id);
+    for (count = 0; count < actNode; ++count) {
+        printf("%u \n", rows[count].id);
     }
      */
 
-    /* vytvoř výstup output */
-    /* printf("%d", actPos); */
-    *output = malloc(sizeof(node) * actPos);
+    /* zkopíruj pole do outputu */
+    *output = malloc(sizeof(node) * actNode);
     if (!(*output)) {
         return 3;
     }
 
-    memcpy(*output, res, sizeof(node) * actPos);
-    *node_len = actPos;
+    memcpy(*output, rows, sizeof(node) * actNode);
+    *node_len = actNode;
 
     /*
-    for (actPos = 0; actPos < *node_len; ++actPos) {
-        printf("%u \n", output[actPos].id);
+    for (actNode = 0; actNode < *node_len; ++actNode) {
+        printf("%u \n", output[actNode].id);
     }
     */
 
-    /* ukonči a uvolni paměť */
+    /* uvolni paměť */
 
     fclose(file);
-    /* TODO free */
-    /* free(res); */
+
+    free(rows);
 
     return 0;
 }
@@ -103,14 +94,24 @@ unsigned int read_nodes(char *file_name, node **output, int *node_len) {
 node *process_node_row(char *line, int *flag) {
     unsigned int step = 0;
     char *wkt_token, *p_end, *p_end2;
-    char cols[COLUMNS][MAX_SZ_LENGTH];
+    char cols[COLUMNS][MAX_SZ_NODES_LENGTH];
     /* prvky vrcholu */
     double x, y;
     unsigned int id;
     /* vrchol */
     node *n = NULL;
 
-    char *token = strtok(line, ",");
+    /* pro rozdělení řádky */
+    char *token = NULL;
+
+    /* ověření parametrů */
+    if (!line || !flag)
+        return NULL;
+
+    /* zpracování řádky -> prvně rozdělíme */
+    token = strtok(line, ",");
+    if (!token)
+        return NULL;
 
     /* 3 kroky (WTD, id a nakonec sname) */
     while (token != NULL) {
@@ -122,22 +123,24 @@ node *process_node_row(char *line, int *flag) {
         token = strtok(NULL, ",");
         step++;
     }
+    /* kontrola řádky */
     if (step < 2)
         return NULL;
-    /* zkontroluj zda nebyl zadán název stanice */
+    /* očekáváme že název stanice nebyl zadán */
     if (step == 2)
         strcpy(cols[2], "");
 
     /* zpracuj prvky "cols" */
+
     /* WKT */
     wkt_token = strtok(cols[0], "(");
     wkt_token = strtok(NULL, ")");
 
-    /* d1 */
+    /* WKT x */
     x = strtod(wkt_token, &p_end);
     if (x == 0 && (errno != 0 || p_end == wkt_token))
         return NULL;
-    /* d2 */
+    /* WKT y */
     y = strtod(p_end, &p_end2);
     if (y == 0 && (errno != 0 || p_end2 == p_end))
         return NULL;
@@ -147,6 +150,7 @@ node *process_node_row(char *line, int *flag) {
     if (id == 0 && (errno != 0 || p_end == cols[1]))
         return NULL;
 
+    /* vytvoř vrchol a vlož do něj prvky řádku */
     n = malloc(sizeof(node));
     if (!n) {
         *flag = 1;

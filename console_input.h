@@ -14,9 +14,10 @@
  * @param argv vstupní pole s přepínači a jejich hodnotami
  * @param flags_len velikost pole "flags"
  * @param flags pole hledaných přepínačů
+ * @param err příkaz pro výpis chyby
  * @return pole pozic hodnot přepínačů na idexu odpovídající pozici přepínače ve "flags",
  *         nebo null pokud byly zadány neplatné parametry, nebo neznámý přepínač
  */
-int *get_input_indexes(int argc, char *argv[], int flags_len, char *flags[]);
+int *get_input_indexes(int argc, char *argv[], int flags_len, char *flags[], unsigned int *err);
 
 #endif

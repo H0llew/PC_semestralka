@@ -46,11 +46,12 @@ typedef struct edge_t {
  * @return <ul>
  *          <li> 0 -> pokud vše proběhlo v pořádku </li>
  *          <li> 1 -> pokud nebyl nalezen soubor </li>
- *          <li> 2 -> pokud nejsou platné atributy   </li>
- *          <li> 3 -> pokud se nepodařilo přiřadit paměť </li>
+ *          <li> 2 -> pokud nejsou platné parametry funkce  </li>
+ *          <li> 3 -> pokud se nepodařilo soubor načíst </li>
+ *          <li> 4 -> pokud se nepodařilo přiřadit paměť </li>
  *         </ul>
  */
-unsigned int read_edges(char *file_name, edge **output, int *edge_len, unsigned int maxId);
+unsigned int read_edges(char *file_name, edge **output, int *edge_len);
 
 /**
  * Zpracuje načtenou řádku na strukturu "edge".
@@ -60,8 +61,15 @@ unsigned int read_edges(char *file_name, edge **output, int *edge_len, unsigned 
  */
 edge *process_edge_row(char *line, int *flag);
 
-unsigned int *create_matrix(unsigned int size);
-
-unsigned int check_edge(unsigned int source, unsigned int target);
+/**
+ * Zkontrolu zda již existuje hrana {u,v}
+ *
+ * @param rows řádky
+ * @param rows_len počet řádků
+ * @param source odkud
+ * @param target kam
+ * @return
+ */
+int checkIfExist(edge *rows, unsigned int rows_len, unsigned int source, unsigned int target);
 
 #endif
